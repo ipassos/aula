@@ -1,0 +1,104 @@
+---
+subtitle: "Relatorio companhia aérea"
+output:
+  word_document:
+    reference_docx: "template.docx"
+    toc: yes
+    number_sections: true
+toc-title: Sumário
+date: "`r format(Sys.time(), '%d/%m/%y')`"
+params:
+  cia_area: "9E"
+title: "`r params$cia_aerea`"
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(magrittr)
+library(rmarkdown)
+library(kableExtra)
+library(knitr)
+library(officedown)
+library(officer)
+library(patchwork)
+library(flextable)
+library(dados)
+library(openxlsx)
+
+```
+
+```{r default, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.cap = TRUE, tab.cap.pre = "Tabela ", tab.cap.sep = " - ")
+
+set_flextable_defaults(
+  font.size = 10, theme_fun = theme_vanilla,
+  padding = 6,
+  background.color = "#EFEFEF")
+```
+
+```{r data, echo=FALSE}
+voos <- voos
+
+voos_cia <- voos %>% 
+    filter(companhia_aerea == params$cia_area)
+
+voos_cia$origem <- as.factor(voos_cia$origem)
+
+
+```
+
+# Introdução
+
+```{r sd, echo=FALSE}
+sd <- sd(voos_cia$tempo_voo, na.rm = T)
+```
+
+
+A companhia `r params$cia_area` teve voos de em media `r mean(voos_cia$tempo_voo, na.rm = T)` e desvio padrão `r sd`.
+
+```{r tabela1, , echo=FALSE}
+tabela1 <- voos_cia %>% 
+  group_by(origem) %>% 
+  count()
+
+flextable(tabela1) %>%
+  set_caption(caption = "Origem voos",
+              style = "Table Caption",
+              autonum = run_autonum(seq_id = "tab", bkm = "origem_voos"))
+
+```
+
+Na tabela `r run_reference("origem_voos")` pode se verificar bla bla. 
+
+```{r grafico1, echo=FALSE, message=FALSE, warning=FALSE}
+voos_cia %>%
+ggplot(aes(x = origem)) + geom_bar()
+```
+
+
+```{r aux, eval=FALSE, include=FALSE}
+
+
+list_cias <- voos %>% select(companhia_aerea) %>% unique()
+
+for(i in list_cias){
+
+  voos_cia <- voos %>%
+    filter(companhia_aerea == i)
+
+  tabela1 <- voos_cia %>% 
+    group_by(origem) %>% 
+    count()
+   
+  planilhas <- createWorkbook() # creates workbook
+
+   addWorksheet(planilhas, sheetName = "tabela1")
+   writeData(planilhas, sheet = "tabela1", x = tabela1, rowNames = F)
+
+   saveWorkbook(planilhas, paste0(i, "_tabela.xlsx"), overwrite = T)
+   }
+
+```
